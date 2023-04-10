@@ -1,0 +1,5 @@
+Name Age Gender Score
+John 20 M 80
+Mary 22 F 85
+Tom 19 M 75
+Alice 21 F 90
