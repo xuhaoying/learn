@@ -1,80 +1,33 @@
-import numpy as np
+定义问题
+这个问题可以看做是一个搜索问题，目标是将一个乱序的矩阵按照1到n^2的顺序排列，并计算出最小移动步数。
 
-# 计算状态的曼哈顿距离
-def manhattan_distance(state, n):
-    distance = 0
-    for i in range(n):
-        for j in range(n):
-            value = state[i][j]
-            if value != 0:
-                target_i = (value - 1) // n
-                target_j = (value - 1) % n
-                distance += abs(i - target_i) + abs(j - target_j)
-    return distance
+定义状态
+我们可以将一个状态定义为一个包含矩阵和移动步骤的元组 (matrix, steps)，其中 matrix 是一个 n×n 的矩阵，steps 是一个字符串，表示当前状态的移动步骤。例如，对于下面的 3×3 矩阵：
 
-# 计算状态的哈密顿距离
-def hamming_distance(state, n):
-    distance = 0
-    for i in range(n):
-        for j in range(n):
-            value = state[i][j]
-            if value != 0 and value != i * n + j + 1:
-                distance += 1
-    return distance
+lua
+Copy code
+[[8, 2, 7],
+ [1, 5, 6],
+ [4, 3, 0]]
+一个可能的状态可以表示为：
 
-# 查找当前状态中最大的值的位置
-def find_zero(state):
-    for i in range(state.shape[0]):
-        for j in range(state.shape[1]):
-            if state[i][j] == state.shape[0]**2:
-                return (i, j)
+lua
+Copy code
+(matrix=[[8, 2, 7], [1, 5, 6], [4, 3, 0]], steps='')
+3. 定义启发式函数
 
-# 移动0到新的位置，返回移动后的状态
-def move(state, zero_pos, direction):
-    i, j = zero_pos
-    new_i, new_j = i, j
-    if direction == 'U':
-        new_i -= 1
-    elif direction == 'D':
-        new_i += 1
-    elif direction == 'L':
-        new_j -= 1
-    elif direction == 'R':
-        new_j += 1
-    new_state = state.copy()
-    new_state[i][j], new_state[new_i][new_j] = new_state[new_i][new_j], new_state[i][j]
-    return new_state
+我们可以使用曼哈顿距离作为启发式函数，计算当前状态中每个元素的曼哈顿距离，然后将所有元素的距离之和作为启发式函数的值。曼哈顿距离可以通过以下公式计算：
 
-# 计算当前状态的f值
-def f(state, n, h_func):
-    h = h_func(state, n)
-    g = state.g
-    return g + h
+scss
+Copy code
+dist = abs(x1 - x2) + abs(y1 - y2)
+其中 (x1, y1) 是当前位置，(x2, y2) 是目标位置。
 
-# A*算法求解最短路径
-def solve_puzzle(start_state, n, h_func):
-    open_list = [start_state]
-    closed_list = set()
-    steps = []  # 保存移动步骤
-    while open_list:
-        # 选取f值最小的状态
-        current_state = min(open_list, key=lambda x: f(x, n, h_func))
-        open_list.remove(current_state)
-        closed_list.add(current_state)
-        # 判断是否达到目标状态
-        if np.array_equal(current_state, np.arange(1, n*n+1).reshape(n, n)):
-            # 回溯路径
-            while current_state.parent is not None:
-                steps.insert(0, current_state.move)
-                current_state = current_state.parent
-            return steps
-        # 扩展状态
-        zero_pos = find_zero(current_state)
-        for direction in ['U', 'D', 'L', 'R']:
-            if ((direction == 'U' and zero_pos[0] > 0) or
-                (direction == 'D' and zero_pos[0] < n-1) or
-                (direction == 'L' and zero_pos[1] > 0) or
-                (direction == 'R' and zero_pos[1] < n-1)):
-                new_state = move(current_state, zero_pos, direction)
-                new_state.g = current_state.g + 1
-                new_state.h = h_func
+定义移动操作
+对于每个状态，我们可以将空格从一个位置移动到另一个位置，产生新的状态。我们可以定义一个 move 函数来实现这个操作，它接受一个状态和一个方向作为输入，返回一个新的状态。方向可以使用字符串 'U'、'D'、'L'、'R' 表示，分别表示向上、向下、向左、向右移动。
+
+定义搜索算法
+使用 A* 算法进行搜索。A* 算法是一种启发式搜索算法，它在搜索过程中维护一个开放列表和一个关闭列表。在每次迭代中，从开放列表中选择一个状态，然后对其进行扩展，即计算出所有可以从该状态到达的新状态，并将这些新状态加入到开放列表中。对于每个新状态，计算出其启发式函数的值，以及从初始状态到该状态的实际移动代价。然后计算出该状态的评估函数值（即实际移动代价加上启发式函数值），并将其加入到开放列表中。最后将当前状态加入到关闭列表中。
+
+实现搜索算法
+下面是一个 Python 实现的例子，其中用到了 numpy 库来处理矩阵：
